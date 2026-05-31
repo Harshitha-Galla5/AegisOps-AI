@@ -1,0 +1,649 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "high-cpu-alert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "e076605d-3507-4edd-9697-9b72326b83ac",
+      "name": "Webhook",
+      "webhookId": "0b885143-4604-4744-a6fd-b3ba4049fbe8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "951e9861-ee6e-463e-a3b4-7e5c83e0f597",
+              "name": "alert_name",
+              "value": "={{ $json.body.alerts[0].labels.alertname }}",
+              "type": "string"
+            },
+            {
+              "id": "47876243-92de-42a3-aedd-34d7b71a259d",
+              "name": "severity",
+              "value": "={{ $json.body.alerts[0].labels.severity }}",
+              "type": "string"
+            },
+            {
+              "id": "9a6a8851-050a-4562-adae-4c679ba55fe6",
+              "name": "summary",
+              "value": "={{ $json.body.alerts[0].annotations.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "4a14be2e-a127-4072-969d-4973297eac63",
+              "name": "description",
+              "value": "={{ $json.body.alerts[0].annotations.description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "91b379f5-1698-4b76-b477-cd84630c98ca",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\": \"tinyllama\",\n\"prompt\": \"You are a Senior DevOps SRE Engineer.\\n\\nAnalyze the following infrastructure alert.\\n\\nAlert Name: {{$node['Webhook'].json['body']['alerts'][0]['labels']['alertname']}}\\nSeverity: {{$node['Webhook'].json['body']['alerts'][0]['labels']['severity']}}\\nSummary: {{$node['Webhook'].json['body']['alerts'][0]['annotations']['summary']}}\\nDescription: {{$node['Webhook'].json['body']['alerts'][0]['annotations']['description']}}\\n\\nProvide:\\n1. Root Cause Analysis\\n2. Impact Assessment\\n3. Troubleshooting Steps\\n4. Recommended Remediation\\n\\nKeep the response concise and production-focused.\",\n\"stream\": false\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        560,
+        0
+      ],
+      "id": "b058e1bf-dac4-4bfc-bf58-d856e654d4ad",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "5056366078",
+        "text": "=🚨 AegisOps AI - Incident Alert\n\nAlert Name:\n{{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}\n\nSeverity:\n{{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"severity\"]}}\n\nSummary:\n{{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"annotations\"][\"summary\"]}}\n\nDescription:\n{{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"annotations\"][\"description\"]}}\n\nAI Analysis:\n\n{{$node[\"HTTP Request\"].json[\"response\"]}}\n\nTimestamp:\n{{$now}}\n\nWorkflow Status:\n✓ Alert Received\n✓ AI Analysis Completed\n✓ Routed to Remediation Engine\n\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -336,
+        384
+      ],
+      "id": "75b8625a-98d2-4db8-801b-917b415f9ffc",
+      "name": "Send a text message",
+      "webhookId": "0c65b926-bf15-42a6-b473-df666e5eccb7",
+      "credentials": {
+        "telegramApi": {
+          "id": "BGMuwawpx7gji02J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}",
+                    "rightValue": "HighCPUUsage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0cb47023-693d-4367-a221-e3bfa35316d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HighCPUUsage"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "544ce74c-6394-4e03-a918-f919241ef288",
+                    "leftValue": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}",
+                    "rightValue": "ContainerDown",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ContainerDown"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "065017ea-7f16-4277-802c-80565292af73",
+                    "leftValue": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}",
+                    "rightValue": "DiskSpaceLow",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DiskSpaceLow"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ccd581cd-0c44-45ce-8235-f1364e13792a",
+                    "leftValue": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}",
+                    "rightValue": "MemoryHigh",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MemoryHigh"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        352
+      ],
+      "id": "67e0108b-755d-450b-94d5-1bf55d629f9e",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "command": "ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -6"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        256,
+        224
+      ],
+      "id": "04248c99-2e83-49f7-b2c9-909e233d9036",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "el17rBPvfpCtq4r5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=free -h \necho \"\" \nps -eo pid,comm,%mem,%cpu --sort=-%mem | head -6"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        80,
+        544
+      ],
+      "id": "a537cd0b-2047-44bd-b7a1-238be4f86ff1",
+      "name": "Execute a command1",
+      "credentials": {
+        "sshPassword": {
+          "id": "el17rBPvfpCtq4r5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "du -sh /var/log/* 2>/dev/null | sort -hr | head"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        688,
+        544
+      ],
+      "id": "0e8417e8-b0bc-4213-aaaf-217dc574c590",
+      "name": "Execute a command2",
+      "credentials": {
+        "sshPassword": {
+          "id": "el17rBPvfpCtq4r5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "docker compose up -d && docker ps --format \"table {{.Names}}\\t{{.Status}}\""
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        688,
+        368
+      ],
+      "id": "1b9407d5-85ed-45a1-8642-8e5ffa4818a2",
+      "name": "Execute a command3",
+      "credentials": {
+        "sshPassword": {
+          "id": "el17rBPvfpCtq4r5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5056366078",
+        "text": "=🚨 High CPU Investigation\n\n{{$json.stdout}}\n\nFinding:\nThe process listed at the top is consuming the highest CPU resources.\n\nRecommended Action:\nReview the process, verify whether the workload is expected, and investigate abnormal spikes or runaway workloads.\n\nGenerated by AegisOps AI",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        224
+      ],
+      "id": "c99ecd7e-9eab-4f71-8d6e-77192248b5c0",
+      "name": "Send a text message1",
+      "webhookId": "ab826f46-0b9f-4382-bf94-121abef0b54f",
+      "credentials": {
+        "telegramApi": {
+          "id": "BGMuwawpx7gji02J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5056366078",
+        "text": "=🧠 Memory Utilization Investigation Report\n\nMemory Diagnostics:\n\n{{$json.stdout}}\n\nFinding:\nThe system has exceeded the configured memory utilization threshold and requires investigation.\n\nImpact Assessment:\nHigh memory consumption may lead to application degradation, increased response times, container restarts, or service unavailability.\n\nRecommended Actions:\n• Identify top memory-consuming processes\n• Investigate potential memory leaks\n• Review recent deployments and workload changes\n• Verify swap usage and available memory capacity\n• Scale resources if sustained utilization persists\n\nIncident Status:\nInvestigation Required\n\nGenerated by AegisOps AI\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        544
+      ],
+      "id": "6e90b736-ecc5-42c7-9f6b-693507a68495",
+      "name": "Send a text message2",
+      "webhookId": "583216af-4a06-4da1-ba26-8b328184d230",
+      "credentials": {
+        "telegramApi": {
+          "id": "BGMuwawpx7gji02J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5056366078",
+        "text": "=💾 Storage Capacity Investigation Report\n\nDisk Diagnostics:\n\n{{$json.stdout}}\n\nFinding:\nAvailable disk capacity has fallen below the configured threshold and requires immediate attention.\n\nImpact Assessment:\nLow disk space may result in application failures, database write issues, log ingestion failures, container instability, and service degradation.\n\nRecommended Actions:\n• Identify directories consuming excessive storage\n• Review log retention and archival policies\n• Remove obsolete files and temporary artifacts\n• Clean unused Docker images, containers, and volumes\n• Verify database growth and backup storage consumption\n• Expand storage capacity if utilization continues to increase\n\nIncident Status:\nInvestigation Required\n\nGenerated by AegisOps AI\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        544
+      ],
+      "id": "15e28ee9-7a52-4bac-8f0d-06acb52ef941",
+      "name": "Send a text message3",
+      "webhookId": "74c1627b-6ba9-4d3c-85ae-38388730f490",
+      "credentials": {
+        "telegramApi": {
+          "id": "BGMuwawpx7gji02J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5056366078",
+        "text": "=🚨 Service Recovery Report\n\nAutomated Remediation Executed Successfully\n\nCurrent Service Status:\n\n{{$json.stdout}}\n\nRecommended Action:\nVerify application functionality and investigate the root cause of the outage.\n\nGenerated by AegisOps AI",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        368
+      ],
+      "id": "b7c205e0-f224-422e-9d95-6f51cfefa984",
+      "name": "Send a text message4",
+      "webhookId": "323d65e9-de70-4d24-9881-f4f971c24d09",
+      "credentials": {
+        "telegramApi": {
+          "id": "BGMuwawpx7gji02J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "incidents",
+          "mode": "list",
+          "cachedResultName": "incidents"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "alert_name": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"alertname\"]}}",
+            "severity": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"labels\"][\"severity\"]}}",
+            "description": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"annotations\"][\"description\"]}}",
+            "ai_analysis": "={{$node[\"HTTP Request\"].json[\"response\"]}}",
+            "action_taken": "Alert Received",
+            "summary": "={{$node[\"Webhook\"].json[\"body\"][\"alerts\"][0][\"annotations\"][\"summary\"]}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "alert_name",
+              "displayName": "alert_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ai_analysis",
+              "displayName": "ai_analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_taken",
+              "displayName": "action_taken",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        944,
+        0
+      ],
+      "id": "290d7145-bce0-4bc5-b837-cd1e29c6dc62",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "g7KPedHk6HLvTwYa",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a command3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a command2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "27acb6b0-9703-4b9e-9ace-bf0d71254adc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a52b64b56a3f54f7a15061a5085d0e259db7db0654ea022c88c82a7411f13acf"
+  },
+  "id": "G7mq9eyJEKxIVDwh",
+  "tags": []
+}
