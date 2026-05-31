@@ -1,0 +1,39 @@
+groups:
+  - name: aegisops-alerts
+    rules:
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU Usage Detected"
+          description: "CPU exceeded threshold on monitoring server"
+
+      - alert: MemoryHigh
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage Detected"
+          description: "Memory utilization exceeded threshold"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!=""} / node_filesystem_size_bytes{mountpoint="/",fstype!=""}) * 100 < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low Disk Space Detected"
+          description: "Available disk space is below 15%"
+
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name!=""})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container Down Detected"
+          description: "A monitored container is no longer reporting metrics"
