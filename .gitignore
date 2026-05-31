@@ -1,0 +1,13 @@
+.env
+
+docker/grafana/
+
+docker/n8n/
+
+*.log
+
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+postgres-data/
